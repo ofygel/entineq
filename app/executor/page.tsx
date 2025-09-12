@@ -1,3 +1,29 @@
+<div className="space-y-3">
+{orders.length===0 && <div className="glass rounded-2xl p-5">Заказов пока нет</div>}
+{orders.map(o => (
+<div key={o.id} className="glass rounded-2xl p-5">
+<div className="flex items-center justify-between">
+<div>
+<div className="text-sm text-white/70">{o.type==='TAXI'?'Такси':'Доставка'} · {new Date(o.createdAt).toLocaleTimeString()}</div>
+<div className="font-semibold">{o.from} → {o.to}</div>
+<div className="text-white/80 text-sm">{o.priceEstimate.toLocaleString()}₸</div>
+</div>
+<div className="flex flex-col gap-2">
+<button disabled={o.status!=='NEW'} onClick={()=> claimOrder(o.id, meExecutorId!)} className={`btn rounded-xl ${o.status==='NEW'?'btn-secondary':'btn-ghost opacity-60'}`}>
+{o.status==='NEW' ? 'Взять' : (o.status==='CLAIMED' && o.claimedBy===meExecutorId) ? 'Ваш заказ' : 'Занят'}
+</button>
+{(o.status==='CLAIMED' && o.claimedBy===meExecutorId) && (
+<button onClick={()=>closeOrder(o.id)} className="btn btn-ghost">Завершить</button>
+)}
+</div>
+</div>
+</div>
+))}
+</div>
+)}
+
+
+{tab==='profile' && me && (
 <div className="glass rounded-2xl p-5 space-y-2">
 <div className="text-white/80">Имя</div>
 <div className="text-lg font-semibold">{me.name}</div>

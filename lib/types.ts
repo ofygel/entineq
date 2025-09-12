@@ -1,13 +1,3 @@
-export type Role = 'CLIENT' | 'EXECUTOR' | 'ADMIN';
-export type OrderType = 'TAXI' | 'DELIVERY';
-export type OrderStatus = 'NEW' | 'CLAIMED' | 'CLOSED';
-
-
-export interface Order {
-id: string;
-type: OrderType;
-from: string;
-to: string;
 distanceKm?: number;
 packageSize?: 'S'|'M'|'L';
 comment?: string;
