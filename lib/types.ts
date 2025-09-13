@@ -8,7 +8,7 @@ export interface Order {
   from: string;
   to: string;
   distanceKm?: number;
-  packageSize?: 'S'|'M'|'L';
+  packageSize?: 'S' | 'M' | 'L';
   comment?: string;
   priceEstimate: number;
   status: OrderStatus;
@@ -31,21 +31,4 @@ export interface ExecutorProfile {
   vehicleType?: 'CAR' | 'BIKE' | 'FOOT' | 'SCOOTER';
   verified: boolean;
   subscriptionActive: boolean;
-}
-
-/** Чат один-на-один по заказу */
-export interface Chat {
-  id: string;
-  orderId: string;
-  clientId: string;
-  executorId: string;
-  createdAt: number;
-}
-
-export interface Message {
-  id: string;
-  chatId: string;
-  sender: 'CLIENT'|'EXECUTOR';
-  body: string;
-  createdAt: number;
 }
