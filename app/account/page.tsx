@@ -1,60 +1,104 @@
 'use client';
+
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useUI } from '@/lib/store';
 import BottomNav from '@/components/BottomNav';
+import { useUI } from '@/lib/store';
 
-export default function AccountPage(){
-  const { roles, workspace, setWorkspace, addRole, removeRole, setMode } = useUI();
-
-  const toggleRole = (r: 'CLIENT'|'EXECUTOR'|'ADMIN') => {
-    if (roles.includes(r)) removeRole(r); else addRole(r);
-  };
+export default function AccountPage() {
+  const { role, mode, setRole, setMode } = useUI();
 
   return (
-    <div className="flex-1 flex flex-col container-mobile pt-safe pb-safe space-y-4">
-      <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} className="card">
-        <div className="text-lg font-semibold mb-3">Ваши роли</div>
-        <div className="grid grid-cols-3 gap-2">
-          {(['CLIENT','EXECUTOR','ADMIN'] as const).map(r => (
-            <button key={r} onClick={()=>toggleRole(r)} className={`btn ${roles.includes(r)?'btn-primary text-black':'btn-ghost'}`}>
-              {r==='CLIENT'?'Клиент':r==='EXECUTOR'?'Исполнитель':'Админ'}
-            </button>
-          ))}
-        </div>
-        <div className="text-xs text-white/60 mt-2">Можно иметь несколько ролей — это доступы. Текущий контекст выбирается ниже.</div>
-      </motion.div>
+    <div className="flex-1 flex flex-col">
+      <div className="container-mobile max-w-md mx-auto w-full p-4 pb-24 space-y-4">
+        {/* Текущий контекст */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-2xl p-4"
+        >
+          <div className="text-lg font-semibold mb-2">Личный кабинет</div>
+          <div className="text-sm text-white/70">
+            Текущая роль: <span className="font-semibold text-white">{role ?? 'не выбрана'}</span>
+          </div>
+          <div className="text-sm text-white/70">
+            Текущий режим клиента: <span className="font-semibold text-white">{mode ?? '—'}</span>
+          </div>
+        </motion.div>
 
-      <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} className="card">
-        <div className="text-lg font-semibold mb-3">Текущий контекст</div>
-        <div className="grid grid-cols-3 gap-2">
-          {(['CLIENT','EXECUTOR','ADMIN'] as const).map(r => (
-            <button key={r} disabled={!roles.includes(r)} onClick={()=>setWorkspace(r)}
-              className={`btn ${workspace===r?'btn-primary text-black':'btn-ghost'} ${!roles.includes(r)?'opacity-40 cursor-not-allowed':''}`}>
-              {r==='CLIENT'?'Клиент':r==='EXECUTOR'?'Исполнитель':'Админ'}
+        {/* Переключение ролей */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-2xl p-4"
+        >
+          <div className="text-lg font-semibold mb-3">Роль</div>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => setRole('CLIENT')}
+              className={`btn ${role === 'CLIENT' ? 'btn-primary text-black' : 'btn-ghost'}`}
+            >
+              Клиент
             </button>
-          ))}
-        </div>
-        <div className="text-xs text-white/60 mt-2">Контекст влияет на нижнюю навигацию и страницы по умолчанию.</div>
-      </motion.div>
+            <button
+              onClick={() => setRole('EXECUTOR')}
+              className={`btn ${role === 'EXECUTOR' ? 'btn-primary text-black' : 'btn-ghost'}`}
+            >
+              Исполнитель
+            </button>
+            <button
+              onClick={() => setRole('ADMIN')}
+              className={`btn ${role === 'ADMIN' ? 'btn-primary text-black' : 'btn-ghost'}`}
+            >
+              Админ
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-white/60">
+            Роль влияет на доступные экраны и действия. В проде это определяется сервером/БД (RLS), а не клиентом.
+          </p>
+        </motion.div>
 
-      <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} className="card">
-        <div className="text-lg font-semibold mb-3">Быстрые действия</div>
-        <div className="grid grid-cols-2 gap-2">
-          <Link href="/client" onClick={()=>{ setWorkspace('CLIENT'); setMode('taxi'); }}>
-            <button className="btn btn-primary w-full text-center">Оформить такси</button>
-          </Link>
-          <Link href="/client" onClick={()=>{ setWorkspace('CLIENT'); setMode('delivery'); }}>
-            <button className="btn btn-primary w-full text-center">Оформить доставку</button>
-          </Link>
-          <Link href="/executor" onClick={()=>setWorkspace('EXECUTOR')}>
-            <button className="btn btn-ghost w-full text-center">Лента исполнителя</button>
-          </Link>
-          <Link href="/admin" onClick={()=>setWorkspace('ADMIN')}>
-            <button className="btn btn-ghost w-full text-center">Админ-панель</button>
-          </Link>
-        </div>
-      </motion.div>
+        {/* Предпочтение режима для клиента */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-2xl p-4"
+        >
+          <div className="text-lg font-semibold mb-3">Режим клиента</div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setMode('taxi')}
+              className={`btn ${mode === 'taxi' ? 'btn-primary text-black' : 'btn-ghost'}`}
+            >
+              Такси
+            </button>
+            <button
+              onClick={() => setMode('delivery')}
+              className={`btn ${mode === 'delivery' ? 'btn-primary text-black' : 'btn-ghost'}`}
+            >
+              Доставка
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-white/60">
+            Здесь сохраняется предпочтение для стартового экрана клиента.
+          </p>
+        </motion.div>
+
+        {/* Быстрые действия */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-2xl p-4"
+        >
+          <div className="text-lg font-semibold mb-3">Быстрые действия</div>
+          <div className="grid grid-cols-2 gap-2">
+            <Link href="/client" className="btn btn-ghost text-center">К экранам клиента</Link>
+            <Link href="/executor" className="btn btn-ghost text-center">К экранам исполнителя</Link>
+            <Link href="/admin" className="btn btn-ghost text-center">Админ-панель</Link>
+            <Link href="/" className="btn btn-ghost text-center">На главную</Link>
+          </div>
+        </motion.div>
+      </div>
 
       <BottomNav />
     </div>

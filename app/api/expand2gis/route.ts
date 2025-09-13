@@ -1,38 +1,62 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-const ALLOWED_HOSTS = new Set(['go.2gis.com']); // разворачиваем только короткие 2ГИС
-const MAX_REDIRECTS = 3;
+/**
+ * Безопасный резолвер коротких ссылок 2ГИС.
+ * Принимает: POST { url: string }
+ * Ограничения: только HTTPS и только whitelisted-хосты *.2gis.*
+ * До 3 редиректов. Возвращает { finalUrl }.
+ */
 
-export async function POST(req: Request) {
+const ALLOWED_HOSTS = [
+  'go.2gis.com',
+  '2gis.ru', 'www.2gis.ru',
+  '2gis.kz', 'www.2gis.kz',
+  '2gis.com', 'www.2gis.com',
+];
+
+function isAllowed(u: URL) {
+  if (u.protocol !== 'https:') return false;
+  const host = u.hostname.toLowerCase();
+  return ALLOWED_HOSTS.some((h) => h === host);
+}
+
+export async function POST(req: NextRequest) {
   try {
-    const { url } = await req.json() as { url?: string };
-    if (!url) return NextResponse.json({ error: 'url required' }, { status: 400 });
+    const raw = (await req.json().catch(() => null)) as unknown;
 
-    let u: URL;
-    try { u = new URL(url); } catch { return NextResponse.json({ error: 'invalid url' }, { status: 400 }); }
-    if (!ALLOWED_HOSTS.has(u.hostname)) {
+    const url =
+      raw && typeof raw === 'object' && 'url' in raw
+        ? (raw as { url?: string }).url
+        : undefined;
+
+    if (!url || typeof url !== 'string') {
+      return NextResponse.json({ error: 'url is required' }, { status: 400 });
+    }
+
+    let current = new URL(url);
+    if (!isAllowed(current)) {
       return NextResponse.json({ error: 'host not allowed' }, { status: 400 });
     }
 
-    let current = url;
-    for (let i = 0; i < MAX_REDIRECTS; i++) {
-      const res = await fetch(current, { method: 'HEAD', redirect: 'manual' });
-      // Если без редиректа — это и есть развёрнутый URL
-      if (res.status < 300 || res.status > 399) {
-        return NextResponse.json({ expanded: res.url || current });
-      }
+    // Идём максимум по 3 редиректам, только между разрешёнными хостами и по HTTPS.
+    for (let i = 0; i < 3; i++) {
+      const res = await fetch(current.toString(), { method: 'GET', redirect: 'manual' });
       const loc = res.headers.get('location');
-      if (!loc) return NextResponse.json({ expanded: res.url || current });
-      const nextUrl = new URL(loc, current).toString();
-      const host = new URL(nextUrl).hostname;
-      // Разрешаем редирект только внутри *.2gis.*
-      if (!/(\.2gis\.(ru|kz)|^2gis\.(ru|kz)$)/i.test(host) && host !== 'go.2gis.com') {
+      const isRedirect = res.status >= 300 && res.status <= 399 && !!loc;
+      if (!isRedirect) break;
+
+      const next = new URL(loc!, current);
+      if (!isAllowed(next)) {
         return NextResponse.json({ error: 'redirect host not allowed' }, { status: 400 });
       }
-      current = nextUrl;
+      current = next;
     }
-    return NextResponse.json({ expanded: current });
+
+    return NextResponse.json({ finalUrl: current.toString() });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'expand failed' }, { status: 500 });
+    return NextResponse.json({ error: e?.message ?? 'bad request' }, { status: 400 });
   }
 }
+
+// Edge-runtime совместимо (без node-модулей)
+export const runtime = 'edge';
