@@ -3,7 +3,7 @@ import { supabaseServer } from '@/lib/supabase-server';
 
 // Возвращает { url, path } активного видеофона
 export async function GET() {
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
 
   const { data, error } = await supabase.from('active_background').select('*').limit(1).single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

@@ -15,7 +15,8 @@ const { GET } = await import('./route');
 
 describe('GET /api/orders', () => {
   it('returns 401 when unauthenticated', async () => {
-    const req = new Request('http://example.com/api/orders');
+    const { NextRequest } = await import('next/server');
+    const req = new NextRequest('http://example.com/api/orders');
     const res = await GET(req);
     expect(res.status).toBe(401);
     const body = await res.json();
