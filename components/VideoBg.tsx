@@ -1,10 +1,16 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { fetchActiveBackgroundPublicUrl } from '@/lib/db';
 
 export default function VideoBg() {
   const vref = useRef<HTMLVideoElement>(null);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState(false);
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchActiveBackgroundPublicUrl().then(u => { if (alive) setSrc(u); }).catch(()=>{});
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     const v = vref.current;
@@ -12,44 +18,29 @@ export default function VideoBg() {
     const play = async () => {
       try {
         v.muted = true;
+        // @ts-ignore
+        v.playsInline = true;
         await v.play();
-        setReady(true);
-      } catch {
-        setError(true);
-      }
+      } catch {}
     };
-    const onError = () => setError(true);
+    play();
     v.addEventListener('canplay', play);
-    v.addEventListener('error', onError);
-    return () => {
-      v.removeEventListener('canplay', play);
-      v.removeEventListener('error', onError);
-    };
-  }, []);
+    return () => v.removeEventListener('canplay', play);
+  }, [src]);
 
   return (
-    <div
-      aria-hidden
-      className="fixed inset-0 -z-10 pointer-events-none"
-      style={{
-        // аккуратный градиент как фоллбек до старта видео
-        background: 'radial-gradient(120% 120% at 50% 0%, #1a1b1f 0%, #0b0b0d 60%)',
-      }}
-    >
-      {!error && (
+    <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none" style={{ background: 'radial-gradient(120% 120% at 50% 0%, #1a1b1f 0%, #0b0b0d 60%)' }}>
+      {src && (
         <video
           ref={vref}
-          className={`w-full h-full object-cover transition-opacity duration-700 ${
-            ready ? 'opacity-80' : 'opacity-0'
-          }`}
-          playsInline
-          loop
-          preload="auto"
-          muted
-          src="/bg.mp4"
-        />
+          className="w-full h-full object-cover opacity-75 transition-opacity duration-700"
+          autoPlay muted loop playsInline preload="auto"
+          poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+        >
+          <source src={src} />
+        </video>
       )}
-      <div className="absolute inset-0 bg-black/25" />
+      <div className="absolute inset-0 bg-black/20" />
     </div>
   );
 }

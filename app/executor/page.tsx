@@ -1,90 +1,75 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import { useData } from '@/lib/store';
-import BottomNav from '@/components/BottomNav';
-import { supabaseBrowser } from '@/lib/supabase-browser';
+import { useEffect, useState } from 'react';
+import { claimOrder, completeOrder, getExecutorFeed, getMyProfile } from '@/lib/db';
 import Link from 'next/link';
 
+type DbOrder = {
+  id: number;
+  type: 'TAXI'|'DELIVERY';
+  from_addr: string;
+  to_addr: string | null;
+  price_estimate: number | null;
+  status: string;
+  created_at: string;
+  claimed_by: string | null;
+};
+
 export default function ExecutorPage() {
-  const { orders, claimOrder, closeOrder, executors, meExecutorId, submitVerification, toggleSubscription, refreshFeed } = useData();
-  const me = useMemo(()=>executors.find(e=>e.id===meExecutorId), [executors, meExecutorId]);
-  const [tab, setTab] = useState<'feed'|'profile'|'verify'|'subscription'>('feed');
+  const [orders, setOrders] = useState<DbOrder[]>([]);
+  const [me, setMe] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{ refreshFeed(); }, [refreshFeed]);
+  const load = async () => {
+    setLoading(true);
+    const profile = await getMyProfile();
+    setMe(profile);
+    const feed = await getExecutorFeed();
+    setOrders(feed as any);
+    setLoading(false);
+  };
 
-  useEffect(()=> {
-    const ch = supabaseBrowser
-      .channel('orders:feed')
-      .on('postgres_changes', { event:'INSERT', schema:'public', table:'orders' }, () => refreshFeed())
-      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'orders' }, () => refreshFeed())
-      .subscribe();
-    return ()=> { supabaseBrowser.removeChannel(ch); };
-  }, [refreshFeed]);
+  useEffect(() => { load(); }, []);
+
+  if (!me) {
+    return (
+      <div className="max-w-md mx-auto p-6 space-y-4">
+        <div className="glass rounded-2xl p-6">
+          <div className="text-white/80">Чтобы видеть фид заказов, войдите и укажите свой город в профиле.</div>
+          <div className="mt-3 flex gap-2">
+            <Link className="btn btn-primary" href="/auth">Войти</Link>
+            <Link className="btn btn-ghost" href="/">На главную</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-md mx-auto w-full p-4 pb-20 space-y-4">
-      <div className="flex gap-2">
-        {(['feed','profile','verify','subscription'] as const).map(t => (
-          <button key={t} onClick={()=>setTab(t)} className={`btn ${t===tab? 'btn-primary text-black':'btn-ghost'} flex-1`}>
-            {t==='feed'?'Заказы':t==='profile'?'Профиль':t==='verify'?'Верификация':'Подписка'}
-          </button>
-        ))}
-      </div>
-
-      {tab==='feed' && (
-        <div className="space-y-3">
-          {orders.length===0 && <div className="glass rounded-2xl p-5">Заказов пока нет</div>}
-          {orders.map(o => (
-            <div key={o.id} className="glass rounded-2xl p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-white/70">{o.type==='TAXI'?'Такси':'Доставка'} · {new Date(o.createdAt).toLocaleTimeString()}</div>
-                  <div className="font-semibold line-clamp-2">{o.from} → {o.to}</div>
-                  <div className="text-white/80 text-sm">{o.priceEstimate.toLocaleString()}₸</div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <button disabled={o.status!=='NEW'} onClick={()=> claimOrder(o.id, meExecutorId!)} className={`btn rounded-xl ${o.status==='NEW'?'btn-secondary':'btn-ghost opacity-60'}`}>
-                    {o.status==='NEW' ? 'Взять' : (o.status==='CLAIMED' && o.claimedBy===meExecutorId) ? 'Ваш заказ' : 'Занят'}
-                  </button>
-                  <Link href={`/chat/${o.id}`} className="text-xs text-white/70 underline text-center">Чат</Link>
-                  {(o.status==='CLAIMED' && o.claimedBy===meExecutorId) && (
-                    <button onClick={()=>closeOrder(o.id)} className="btn btn-ghost">Завершить</button>
-                  )}
-                </div>
-              </div>
+    <div className="max-w-md mx-auto w-full p-4 pb-24 space-y-4">
+      <div className="text-white/80 text-sm">Город: <b>{me.city || '—'}</b></div>
+      {loading && <div className="glass p-4 rounded-2xl">Загружаем...</div>}
+      {!loading && orders.length===0 && <div className="glass p-4 rounded-2xl">Заказов пока нет</div>}
+      {orders.map(o => (
+        <div key={o.id} className="glass rounded-2xl p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm text-white/70">{o.type==='TAXI'?'Такси':'Доставка'} · {new Date(o.created_at).toLocaleTimeString()}</div>
+              <div className="font-semibold">{o.from_addr} → {o.to_addr || '—'}</div>
+              <div className="text-white/80 text-sm">{o.price_estimate ? `${o.price_estimate.toLocaleString()}₸` : '—'}</div>
             </div>
-          ))}
+            <div className="flex flex-col gap-2">
+              {o.status==='NEW' ? (
+                <button onClick={async ()=>{ await claimOrder(o.id); await load(); }} className="btn btn-primary rounded-xl">Взять</button>
+              ) : (
+                <button disabled className="btn btn-ghost opacity-60">Занят</button>
+              )}
+              {o.status==='CLAIMED' && (
+                <button onClick={async ()=>{ await completeOrder(o.id); await load(); }} className="btn btn-ghost">Завершить</button>
+              )}
+            </div>
+          </div>
         </div>
-      )}
-
-      {tab==='profile' && me && (
-        <div className="glass rounded-2xl p-5 space-y-2">
-          <div className="text-white/80">Имя</div>
-          <div className="text-lg font-semibold">{me.name}</div>
-          <div className="flex items-center gap-2 text-sm"><span className={`h-2.5 w-2.5 rounded-full ${me.verified?'bg-green-400':'bg-yellow-400'}`} /> {me.verified? 'Верифицирован' : 'Ожидает/не верифицирован'}</div>
-          <div className="flex items-center gap-2 text-sm"><span className={`h-2.5 w-2.5 rounded-full ${me.subscriptionActive?'bg-green-400':'bg-red-400'}`} /> {me.subscriptionActive? 'Подписка активна' : 'Подписка неактивна'}</div>
-        </div>
-      )}
-
-      {tab==='verify' && me && (
-        <div className="glass rounded-2xl p-5 space-y-3">
-          <div className="text-white/85 font-semibold">Верификация</div>
-          <p className="text-sm text-white/70">Загрузите фото документов (демо: создаём заглушки)</p>
-          <button onClick={()=> submitVerification(me.id, ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB'])} className="btn btn-secondary rounded-xl">Отправить на модерацию</button>
-        </div>
-      )}
-
-      {tab==='subscription' && me && (
-        <div className="glass rounded-2xl p-5 space-y-3">
-          <div className="text-white/85 font-semibold">Подписка для исполнителя</div>
-          <p className="text-sm text-white/70">Демо-переключатель имитирует оплату.</p>
-          <button onClick={()=> toggleSubscription(me.id, !me.subscriptionActive)} className="btn btn-primary rounded-xl">
-            {me.subscriptionActive ? 'Отключить подписку' : 'Оплатить и активировать'}
-          </button>
-        </div>
-      )}
-
-      <BottomNav />
+      ))}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Inter } from 'next/font/google';
 import VideoBg from '@/components/VideoBg';
+import AuthProvider from '@/components/AuthProvider';
 
 export const metadata: Metadata = {
   title: 'Taxi & Delivery — SPA',
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ru">
       <body className={`${inter.className} min-h-dvh relative overflow-hidden`}>
         <VideoBg />
-        <main className="relative z-10 min-h-dvh flex flex-col">{children}</main>
+        <AuthProvider>
+          <main className="relative z-10 min-h-dvh flex flex-col">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
