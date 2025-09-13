@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase-server';
 
-/**
- * POST /api/chat/[orderId]/message
- * Body: { text: string }
- */
-export async function POST(req: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
-  const { orderId } = await params;
-  if (!orderId) return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
+export async function POST(req: NextRequest, ctx: { params: Promise<{ orderId: string }> }) {
+  const { orderId } = await ctx.params;
+  const supabase = supabaseServer();
 
-  const body = (await req.json().catch(() => null)) as { text?: string } | null;
-  if (!body?.text || typeof body.text !== 'string') {
-    return NextResponse.json({ error: 'text is required' }, { status: 400 });
-  }
+  const { data: { user }, error: uerr } = await supabase.auth.getUser();
+  if (uerr || !user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  // TODO: insert в messages (Supabase) и realtime-ивент
-  return NextResponse.json({
-    message: { id: 'tmp-' + Math.random().toString(36).slice(2), orderId, text: body.text, createdAt: new Date().toISOString() },
-  });
+  const { body } = await req.json();
+
+  const { data: chat, error: cErr } = await supabase.from('chats').select('*').eq('order_id', Number(orderId)).single();
+  if (cErr) return NextResponse.json({ error: cErr.message }, { status: 400 });
+
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({ chat_id: chat.id, sender_id: user.id, body })
+    .select('*')
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ message: data });
 }
-
-export const runtime = 'edge';

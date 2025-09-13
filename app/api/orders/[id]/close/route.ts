@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase-server';
 
-/** POST /api/orders/[id]/close — закрыть заказ (заглушка) */
-export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
-  // TODO: в БД: статус -> COMPLETED/CANCELLED и т.д.
-  return NextResponse.json({
-    order: { id, status: 'CLOSED', closedAt: new Date().toISOString() },
-  });
+export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  const supabase = supabaseServer();
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
+    .eq('id', Number(id))
+    .select('*')
+    .single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ order: data });
 }
-
-export const runtime = 'edge';

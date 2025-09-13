@@ -1,27 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 
+// Возвращает { url, path } активного видеофона
 export async function GET() {
-  try {
-    const { data, error } = await supabaseServer
-      .from('active_background')
-      .select('storage_path')
-      .limit(1)
-      .maybeSingle();
+  const supabase = supabaseServer();
 
-    if (error) {
-      return NextResponse.json({ url: null, error: error.message }, { status: 200 });
-    }
+  const { data, error } = await supabase.from('active_background').select('*').limit(1).single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (!data?.storage_path) return NextResponse.json({ url: null });
 
-    const path = data?.storage_path;
-    if (!path) return NextResponse.json({ url: null }, { status: 200 });
+  // пробуем подписанный URL, иначе — public
+  const signed = await supabase.storage.from('backgrounds').createSignedUrl(data.storage_path, 3600);
+  const url = signed.data?.signedUrl
+    ?? supabase.storage.from('backgrounds').getPublicUrl(data.storage_path).data.publicUrl;
 
-    // Паблик-линк к объекту в bucket 'backgrounds'
-    const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const url = `${base}/storage/v1/object/public/backgrounds/${encodeURIComponent(path)}`;
-
-    return NextResponse.json({ url }, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json({ url: null, error: e?.message || 'unknown' }, { status: 200 });
-  }
+  return NextResponse.json({ url, path: data.storage_path });
 }
