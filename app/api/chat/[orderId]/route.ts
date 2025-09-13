@@ -3,7 +3,7 @@ import { supabaseServer } from '@/lib/supabase-server';
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await ctx.params;
-  const supabase = supabaseServer();
+  const supabase = await supabaseServer();
 
   let { data: chat, error } = await supabase.from('chats').select('*').eq('order_id', Number(orderId)).single();
   if (error && error.code !== 'PGRST116') { // not found handled below
