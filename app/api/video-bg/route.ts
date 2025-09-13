@@ -1,27 +1,40 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseServer } from '@/lib/supabase-server';
 
 export const runtime = 'edge';
 
 export async function GET() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(url, anon);
+  try {
+    // 1) пробуем вью active_background
+    const v = await supabaseServer
+      .from('active_background')
+      .select('storage_path')
+      .maybeSingle();
 
-  // читаем активный фон (storage_path), вьюха доступна всем (RLS allow select)
-  const { data, error } = await supabase
-    .from('active_background')
-    .select('storage_path')
-    .maybeSingle();
+    let storagePath = v.data?.storage_path || null;
 
-  // fallback на локальный файл
-  const path = data?.storage_path?.trim() || 'bg.mp4';
+    // 2) если вью пустая — берём последний активный из backgrounds
+    if (!storagePath) {
+      const b = await supabaseServer
+        .from('backgrounds')
+        .select('storage_path')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      storagePath = b.data?.storage_path || null;
+    }
 
-  // если бакет public — можно собрать public URL прямо так:
-  const publicUrl = `${url}/storage/v1/object/public/backgrounds/${encodeURIComponent(path)}`;
+    if (!storagePath) {
+      return NextResponse.json({ url: null, fallback: '/bg.mp4' }, { status: 200 });
+    }
 
-  if (error) {
-    return NextResponse.json({ url: '/bg.mp4', hint: 'db_error' }, { status: 200 });
+    // Бакет public: формируем публичную ссылку
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const url = `${base}/storage/v1/object/public/backgrounds/${encodeURIComponent(storagePath)}`;
+
+    return NextResponse.json({ url }, { status: 200 });
+  } catch (e) {
+    return NextResponse.json({ url: null, fallback: '/bg.mp4' }, { status: 200 });
   }
-  return NextResponse.json({ url: publicUrl }, { status: 200 });
 }
