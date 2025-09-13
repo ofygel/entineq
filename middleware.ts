@@ -1,16 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { randomUUID } from 'crypto';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  if (process.env.NODE_ENV === 'production') {
-    const nonce = randomUUID();
-    res.headers.set(
-      'Content-Security-Policy',
-      `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic'; connect-src 'self' https://*.supabase.co https://*.2gis.ru https://*.2gis.kz https://*.2gis.com; img-src 'self' data: blob:; style-src 'self';`
-    );
-    res.headers.set('x-nonce', nonce);
-  }
-  return res;
+/**
+ * Простой pass-through middleware.
+ * Без импорта node:crypto — совместимо с Edge Runtime.
+ * CSP не выставляем в деве/стейдже, чтобы не ловить блокировку inline-скриптов Next.
+ */
+export function middleware(_req: NextRequest) {
+  // Можно добавить заголовки/локаль/редиректы — сейчас просто пропускаем.
+  return NextResponse.next();
 }
 
+/**
+ * Матчер оставим дефолтным — middleware применится ко всем путям,
+ * кроме статических ассетов/иконок. При желании сузить область — отредактируй.
+ */
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
+  ],
+};

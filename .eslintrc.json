@@ -1,0 +1,8 @@
+{
+  "root": true,
+  "extends": ["next/core-web-vitals"],
+  "plugins": ["@next/eslint-plugin-next"],
+  "rules": {
+    // твои правила при желании
+  }
+}
