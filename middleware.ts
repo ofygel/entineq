@@ -1,10 +1,10 @@
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-export function middleware(_req: NextRequest) {
+export function middleware() {
+  // Простой pass-through + быстрый health
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest).*)']
 };
