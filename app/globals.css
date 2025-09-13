@@ -2,32 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* База */
 :root { color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; }
-body { @apply bg-black text-white; }
+body { @apply bg-black text-white overflow-x-hidden touch-pan-y; }
 
+/* Стекло */
 .glass {
-  background: linear-gradient(to bottom right, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+  background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
   backdrop-filter: blur(14px) saturate(130%);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
-  border: 1px solid rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.13);
   box-shadow: 0 18px 40px rgba(0,0,0,0.35);
 }
 
+/* Мобильный контейнер и safe-area */
+.container-mobile { max-width: 420px; margin: 0 auto; padding-left: 14px; padding-right: 14px; }
+.pt-safe { padding-top: max(12px, env(safe-area-inset-top)); }
+.pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 76px); } /* под нижнюю навигацию */
+.page { @apply min-h-[100svh] flex flex-col container-mobile pt-safe pb-safe; }
+
+/* Кнопки */
 .btn { @apply rounded-2xl px-4 py-3 font-medium active:scale-[0.98] transition; }
 .btn-primary { @apply bg-white text-black hover:bg-zinc-100; }
 .btn-ghost { @apply bg-white/10 hover:bg-white/20; }
-.btn-secondary { @apply bg-pink-300 text-black hover:opacity-90; }
-
-.container-mobile { max-width: 430px; margin: 0 auto; padding-left: 14px; padding-right: 14px; }
-
-.pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 68px); } /* для навигации */
-.pt-safe { padding-top: calc(env(safe-area-inset-top) + 8px); }
-
-.input {
-  @apply w-full rounded-2xl px-4 py-3 bg-white/10 border border-white/20 outline-none placeholder-white/40;
+/* мокрый асфальт */
+.btn-secondary {
+  background-color: #2f3a44; /* мокрый асфальт */
+  color: #fff;
 }
-.textarea {
-  @apply w-full rounded-2xl px-4 py-3 bg-white/10 border border-white/20 outline-none resize-none;
-}
+.btn-secondary:hover { filter: brightness(1.06); }
+
+/* Поля */
+.label { @apply text-sm text-white/70 mb-1 block; }
+.input { @apply w-full rounded-2xl px-4 py-3 bg-white/10 border border-white/20 outline-none placeholder-white/40; }
+.textarea { @apply w-full rounded-2xl px-4 py-3 bg-white/10 border border-white/20 outline-none resize-none; }
+
+/* Карточка */
 .card { @apply glass rounded-3xl p-4; }
+
+/* Скрыть прокрутку (когда нужна горизонталка в компонентах) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

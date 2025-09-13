@@ -18,7 +18,7 @@ export default function BottomNav(){
       { href: '/admin', label: 'Админ' },
       { href: '/account', label: 'Кабинет' },
     ]
-    : [ // CLIENT или пусто
+    : [
       { href: '/', label: 'Главная' },
       { href: '/client', label: 'Заказ' },
       { href: '/account', label: 'Кабинет' },
@@ -26,7 +26,7 @@ export default function BottomNav(){
 
   return (
     <nav className="fixed bottom-3 left-0 right-0 z-40">
-      <div className="mx-auto container-mobile">
+      <div className="container-mobile">
         <div className="glass rounded-3xl p-1.5 flex items-center justify-between">
           {items.map(it => {
             const active = pathname === it.href;

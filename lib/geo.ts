@@ -55,12 +55,15 @@ export function parse2GisUrl(raw: string): Parsed2Gis {
         return { kind: 'directions', city, routeType, from: parseLegacy(m[3]), to: parseLegacy(m[4]) };
       }
     }
-
-    if (u.hostname.includes('go.2gis.com')) return { kind: 'unknown' };
     return { kind: 'unknown' };
   } catch { return { kind: 'unknown' }; }
 }
 
+export function build2GisGeoLink(pt: DGisPoint & { city?: string }) {
+  const cityPrefix = pt.city ? `/${encodeURIComponent(pt.city)}` : '';
+  const id = pt.objectId ?? 'geo';
+  return `https://2gis.ru${cityPrefix}/geo/${id}/${pt.lon},${pt.lat}`;
+}
 export function build2GisDirectionsLink(p: { from?: DGisPoint; to: DGisPoint; mode?: 'car'|'bus'|'pedestrian'|'bicycle'|'scooter'|'truck'|'taxi'; city?: string }) {
   const type = p.mode || 'car';
   const pp = (pt?: DGisPoint) => pt ? `${pt.lon},${pt.lat}${pt.objectId?`;${pt.objectId}`:''}` : '';
@@ -68,9 +71,43 @@ export function build2GisDirectionsLink(p: { from?: DGisPoint; to: DGisPoint; mo
   const cityPrefix = p.city ? `/${encodeURIComponent(p.city)}` : '';
   return `https://2gis.ru${cityPrefix}/directions/tab/${type}/points/${points}`;
 }
-export function build2GisGeoLink(pt: DGisPoint & { city?: string }) {
-  const cityPrefix = pt.city ? `/${encodeURIComponent(pt.city)}` : '';
-  const id = pt.objectId ?? 'geo';
-  return `https://2gis.ru${cityPrefix}/geo/${id}/${pt.lon},${pt.lat}`;
+
+/** Координаты из 2ГИС URL или строки вида "lat, lon" | "lon, lat" */
+export function coordsFromAny(raw: string): { lat:number; lon:number } | null {
+  const s = (raw||'').trim();
+  if (!s) return null;
+
+  const p = parse2GisUrl(s);
+  if (p.kind === 'geo') return { lat: p.point.lat, lon: p.point.lon };
+  if (p.kind === 'directions') {
+    if (p.to) return { lat: p.to.lat, lon: p.to.lon };
+    if (p.from) return { lat: p.from.lat, lon: p.from.lon };
+  }
+
+  const m = s.replace(/\s/g,'').match(/^(-?\d+(\.\d+)?),(-?\d+(\.\d+)?)$/);
+  if (m) {
+    const a = Number(m[1]), b = Number(m[3]);
+    const isLatFirst = a > -90 && a < 90;
+    return isLatFirst ? { lat:a, lon:b } : { lat:b, lon:a };
+  }
+  return null;
 }
-export const formatCoordsLabel = (pt: {lat:number;lon:number}) => `${pt.lat.toFixed(6)}, ${pt.lon.toFixed(6)}`;
+
+/** Haversine distance в км */
+export function haversineKm(a:{lat:number;lon:number}, b:{lat:number;lon:number}) {
+  const toRad = (x:number)=> x*Math.PI/180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const la1 = toRad(a.lat), la2 = toRad(b.lat);
+  const h = Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** Округление до десятых */
+export const round1 = (x:number)=> Math.round(x*10)/10;
+
+/** Человеческая метка координат */
+export function formatCoordsLabel(pt:{lat:number;lon:number}) {
+  return `${pt.lat.toFixed(5)}, ${pt.lon.toFixed(5)}`;
+}

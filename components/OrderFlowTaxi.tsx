@@ -1,35 +1,52 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useData, useUI } from '@/lib/store';
+import { coordsFromAny, haversineKm, round1 } from '@/lib/geo';
 import GeoAssist from '@/components/GeoAssist';
+
+type Coords = { lat:number; lon:number } | null;
 
 export default function OrderFlowTaxi() {
   const { createOrder } = useData();
   const { openModal } = useUI();
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [distanceKm, setDistanceKm] = useState(5);
-  const [comment, setComment] = useState('');
-  const price = Math.max(800, Math.round(500 + distanceKm * 180));
+
+  const [from, setFrom] = useState('');   // что ввёл пользователь
+  const [to, setTo]     = useState('');
+  const cFrom: Coords = useMemo(()=> coordsFromAny(from), [from]);
+  const cTo:   Coords = useMemo(()=> coordsFromAny(to),   [to]);
+
+  const distanceKm = useMemo(()=> (cFrom && cTo) ? round1(haversineKm(cFrom, cTo)) : null, [cFrom, cTo]);
+
+  // тариф: посадка 700 + 120 тг/км (на прямой). Можно заменить на реальный позже.
+  const price = useMemo(()=> {
+    if (!distanceKm) return 700;
+    return Math.max(700, Math.round(700 + distanceKm * 120));
+  }, [distanceKm]);
 
   const submit = () => {
-    const order = createOrder({ type: 'TAXI', from, to, distanceKm, comment, priceEstimate: price });
+    const order = createOrder({
+      type: 'TAXI',
+      from, to,
+      distanceKm: distanceKm ?? undefined,
+      priceEstimate: price,
+      comment: undefined,
+    } as any);
     openModal(`order-created-${order.id}`);
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="page">
       <div className="card">
         <h2 className="text-xl font-semibold mb-3">Женское такси</h2>
         <div className="space-y-3">
           <div>
-            <label className="text-sm text-white/70">Откуда</label>
-            <input value={from} onChange={e=>setFrom(e.target.value)} placeholder="Адрес или ссылка 2ГИС" className="input" />
+            <label className="label">Откуда</label>
+            <input value={from} onChange={e=>setFrom(e.target.value)} placeholder="Адрес, 2ГИС-ссылка или координаты" className="input" />
           </div>
           <div>
-            <label className="text-sm text-white/70">Куда</label>
-            <input value={to} onChange={e=>setTo(e.target.value)} placeholder="Адрес или ссылка 2ГИС" className="input" />
+            <label className="label">Куда</label>
+            <input value={to} onChange={e=>setTo(e.target.value)} placeholder="Адрес, 2ГИС-ссылка или координаты" className="input" />
           </div>
 
           <GeoAssist
@@ -38,18 +55,21 @@ export default function OrderFlowTaxi() {
             showReverseAddress={false}
           />
 
-          <div>
-            <label className="text-sm text-white/70">Расстояние (км): {distanceKm}</label>
-            <input type="range" min={1} max={30} value={distanceKm} onChange={e=>setDistanceKm(parseInt(e.target.value))} className="w-full" />
-          </div>
-          <div>
-            <label className="text-sm text-white/70">Комментарий</label>
-            <textarea value={comment} onChange={e=>setComment(e.target.value)} className="textarea h-20" placeholder="Например: «Позвонить за 5 минут»" />
+          <div className="glass rounded-2xl p-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-white/70">Расстояние</span>
+              <span className="font-medium">{distanceKm ? `${distanceKm} км` : '—'}</span>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <div className="text-white/80">Предварительно: <b className="text-white">{price.toLocaleString()}₸</b></div>
-            <button disabled={!from || !to} onClick={submit} className="btn btn-secondary rounded-2xl disabled:opacity-50">Опубликовать заказ</button>
+          <div className="grid gap-2">
+            <div className="text-white/80">Предварительно: <b className="text-white text-lg">{price.toLocaleString()}₸</b></div>
+            <button
+              disabled={!cFrom || !cTo}
+              onClick={submit}
+              className="btn btn-secondary w-full disabled:opacity-50">
+              Опубликовать заказ
+            </button>
           </div>
         </div>
       </div>
