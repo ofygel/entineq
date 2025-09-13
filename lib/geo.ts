@@ -106,8 +106,5 @@ export function haversineKm(a:{lat:number;lon:number}, b:{lat:number;lon:number}
 
 /** Округление до десятых */
 export const round1 = (x:number)=> Math.round(x*10)/10;
-
 /** Человеческая метка координат */
-export function formatCoordsLabel(pt:{lat:number;lon:number}) {
-  return `${pt.lat.toFixed(5)}, ${pt.lon.toFixed(5)}`;
-}
+export const formatCoordsLabel = (pt:{lat:number;lon:number}) => `${pt.lat.toFixed(5)}, ${pt.lon.toFixed(5)}`;

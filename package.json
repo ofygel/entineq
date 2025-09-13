@@ -9,18 +9,22 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.57.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.544.0",
     "nanoid": "^5.1.5",
     "next": "15.5.3",
+    "posthog-js": "^1.265.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@sentry/nextjs": "^10.11.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -1,15 +1,10 @@
 'use client';
-import { useParams, useRouter } from 'next/navigation';
 import ChatWindow from '@/components/Chat/ChatWindow';
-
-export default function ChatByOrderPage(){
-  const params = useParams<{ orderId: string }>();
-  const router = useRouter();
-  const orderId = params.orderId;
-  if (!orderId) { if (typeof window!=='undefined') router.replace('/'); return null; }
+export default function ChatPage({ params }: { params: { orderId: string } }) {
   return (
-    <div className="max-w-md mx-auto p-4">
-      <ChatWindow orderId={orderId} />
+    <div className="container-mobile pt-safe pb-safe space-y-3">
+      <h1 className="text-xl font-semibold">Чат заказа</h1>
+      <ChatWindow orderId={params.orderId}/>
     </div>
   );
 }
