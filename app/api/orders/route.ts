@@ -32,9 +32,16 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   const supabase = createRouteHandlerClient({ cookies });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const city = searchParams.get('city');
-  let q = supabase.from('orders').select('*').eq('status','NEW').order('created_at',{ ascending:false }).limit(50);
+  let q = supabase.from('orders')
+    .select('*')
+    .eq('status', 'NEW')
+    .order('created_at', { ascending: false })
+    .limit(50);
   if (city) q = q.eq('city', city);
   const { data, error } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
