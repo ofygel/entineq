@@ -13,7 +13,7 @@ function calcPrice(payload: any) {
 }
 
 export async function GET(_req: NextRequest) {
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
   const { data, error } = await supabase
     .from('orders')
     .select('*')
@@ -24,7 +24,7 @@ export async function GET(_req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
   const { data: { user }, error: uerr } = await supabase.auth.getUser();
   if (uerr || !user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 

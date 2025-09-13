@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabase-browser';
+import { supabase } from '@/lib/supabase';
 
 export default function ChatWindow({ orderId }: { orderId: string }) {
   const [chatId, setChatId] = useState<string|undefined>();
@@ -17,16 +17,16 @@ export default function ChatWindow({ orderId }: { orderId: string }) {
 
   useEffect(()=> {
     if (!chatId) return;
-    const sub = supabaseBrowser
+    const sub = supabase
       .channel(`messages:${chatId}`)
       .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages', filter:`chat_id=eq.${chatId}` },
-        (payload) => setMessages((prev)=> [...prev, payload.new]))
+        (payload: any) => setMessages((prev)=> [...prev, payload.new]))
       .subscribe();
     (async()=>{
-      const { data, error } = await supabaseBrowser.from('messages').select('*').eq('chat_id', chatId).order('created_at',{ascending:true}).limit(200);
+      const { data, error } = await supabase.from('messages').select('*').eq('chat_id', chatId).order('created_at',{ascending:true}).limit(200);
       if (!error && data) setMessages(data);
     })();
-    return ()=> { supabaseBrowser.removeChannel(sub); };
+    return ()=> { supabase.removeChannel(sub); };
   }, [chatId]);
 
   const send = async ()=> {
