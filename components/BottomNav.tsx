@@ -6,8 +6,6 @@ import { usePathname } from 'next/navigation';
 const items: { href: Route; label: string }[] = [
   { href: '/', label: 'Главная' },
   { href: '/client', label: 'Заказ' },
-  { href: '/executor', label: 'Исполнитель' },
-  { href: '/admin', label: 'Админ' },
 ];
 
 export default function BottomNav(){
