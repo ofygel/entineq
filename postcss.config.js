@@ -1,3 +1,6 @@
-Команда AT признана нерекомендуемой. Используйте вместо нее schtasks.exe.
-
-Такой запрос не поддерживается.
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
