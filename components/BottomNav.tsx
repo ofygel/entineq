@@ -2,7 +2,7 @@
 import { useOrder } from '@/lib/order-store';
 
 const items = [
-  { step: 'start', label: 'Главная' },
+  { step: 'home', label: 'Главная' },
   { step: 'start', label: 'Заказ' },
   { step: 'history', label: 'История' },
   { step: 'feedback', label: 'Отзыв' },
@@ -10,7 +10,7 @@ const items = [
 ];
 
 export default function BottomNav() {
-  const { setStep, openModal } = useOrder();
+  const { setStep, openModal, closeModal } = useOrder();
   return (
     <nav className="fixed bottom-3 left-0 right-0 z-40">
       <div className="mx-auto max-w-md px-3">
@@ -19,8 +19,13 @@ export default function BottomNav() {
             <button
               key={it.label}
               onClick={() => {
-                openModal();
-                setStep(it.step as any);
+                if (it.step === 'home') {
+                  setStep('start');
+                  closeModal();
+                } else {
+                  setStep(it.step as any);
+                  openModal();
+                }
               }}
               className="px-3 py-2 text-sm rounded-xl text-white/80 hover:text-white hover:bg-white/10"
             >
