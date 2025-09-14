@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 
-export type FlowStep = 'start' | 'details' | 'searching' | 'in_progress' | 'completed' | 'error';
+export type FlowStep =
+  | 'start'
+  | 'details'
+  | 'searching'
+  | 'in_progress'
+  | 'completed'
+  | 'error'
+  | 'history'
+  | 'feedback'
+  | 'support';
 
 export interface OrderDraft {
   type: 'TAXI' | 'DELIVERY';
