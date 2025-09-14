@@ -45,12 +45,12 @@ const initialDraft: OrderDraft = {
 };
 
 export const useOrder = create<UIFlowState>((set) => ({
-  open: true,
+  open: false,
   step: 'start',
   draft: initialDraft,
   openModal: () => set({ open: true }),
   closeModal: () => set({ open: false }),
   setStep: (s) => set({ step: s }),
   patchDraft: (p) => set((state) => ({ draft: { ...state.draft, ...p } })),
-  reset: () => set({ step: 'start', draft: initialDraft, open: true }),
+  reset: () => set({ step: 'start', draft: initialDraft, open: false }),
 }));
